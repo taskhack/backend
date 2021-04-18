@@ -1,26 +1,29 @@
-[default.limits]
-forms = "64 kB"
-json = "1 MiB"
-msgpack = "2 MiB"
-"file/jpg" = "5 MiB"
-
-[global.databases]
-sqlite_tb = { url = "/tmp/test.sqlite" }
-
-[default]
-extra = false
-
-[debug]
-address = "127.0.0.1"
+[development]
+address = "localhost"
 port = 8000
-workers = 1
-keep_alive = 0
-log_level = "normal"
-
-[release]
-address = "127.0.0.1"
-port = 8000
-workers = 12
+workers = 4
 keep_alive = 5
-log_level = "critical"
-extra = false
+read_timeout = 5
+write_timeout = 5
+log = "normal"
+limits = { forms = 32768 }
+
+[staging]
+address = "0.0.0.0"
+port = 8000
+workers = 8
+keep_alive = 5
+read_timeout = 5
+write_timeout = 5
+log = "normal"
+limits = { forms = 32768 }
+
+[production]
+address = "0.0.0.0"
+port = 8000
+workers = 8
+keep_alive = 5
+read_timeout = 5
+write_timeout = 5
+log = "critical"
+limits = { forms = 32768 }

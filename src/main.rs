@@ -1,21 +1,18 @@
 #![feature(proc_macro_hygiene, decl_macro)]
 
 #[macro_use] extern crate rocket;
-#[macro_use] extern crate rocket_contrib;
-//extern crate diesel;
+extern crate rocket_contrib;
+#[macro_use] extern crate diesel;
+use serde_json::json;
 
-
-use rocket_contrib::databases::diesel::{self, associations::HasTable};
-use rocket_contrib::databases::diesel::Queryable;
-use rocket_contrib::databases::diesel::prelude::*;
-use self::schema::users::dsl::*;
+use diesel::prelude::*;
+use diesel::{SqliteConnection, Queryable};
 
 pub mod schema;
+use schema::users;
 
-#[database("sqlite_db")]
-struct DbConn(diesel::SqliteConnection);
-
-#[derive(Queryable)]
+#[derive(Queryable,Insertable,FromForm)]
+#[table_name="users"]
 pub struct User {
     pub email: String,
     pub hash: String,
@@ -25,12 +22,39 @@ pub struct User {
     pub pfp_link:String
 }
 
-#[get("/<email>")]
-async fn get_user(email: String, db: DbConn) -> String
+pub fn get_connection() -> SqliteConnection
 {
-    let temp: User = User { email: String::from("dgramopadhye@gmail.com"), hash: String::from("123"), firstname:String::from("Dhruv"), lastname: String::from("Gramopadhye"), groups: String::from(""), pfp_link:String::from("https://dgramop.xyz") };
-    dbg!(diesel::insert_into(schema::users::table).values(&temp));
-    format!("{} ",email)
+    SqliteConnection::establish("/tmp/hack.sqlite").expect("Couldn't connect to the database!")
+}
+
+#[post("/users/<email>/register")]
+fn put_user(email: String, user: rocket::request::Form<User>) -> String
+{
+//    use schema::users::dsl::*;
+    let connection: SqliteConnection = get_connection();
+    let temp: User = User { email: email.clone() , hash: String::from("123"), firstname:String::from("Dhruv"), lastname: String::from("Gramopadhye"), groups: String::from(""), pfp_link:String::from("https://dgramop.xyz") };
+    let registration = diesel::insert_into(schema::users::table)
+                .values(&temp)
+                .execute(&connection);
+    match registration {
+        Ok(_) => {
+            String::from("{\"status\":\"success\"}")
+        },
+        Err(e) => { 
+            if e.to_string().contains("UNIQUE")
+            {
+                String::from("{\"status\":\"failure\",\"error\":\"already registered\"}")
+            }
+            else 
+            {
+                json!({
+                    "status":"failure",
+                    "error":e.to_string()
+                }).to_string()
+                //bad idea to leak the error, but this is just for a hackathon project
+            }
+        }
+    }
     //fetch user from mongodb
 }
 
@@ -39,10 +63,8 @@ fn version() -> &'static str {
     "{\"status\":\"success\",\"api\":\"v1\"}"
 }
 
-#[rocket::main]
-async fn main() {
-    rocket::build()
-        .mount("/",routes![version])
-        .launch()
-        .await.expect("failed to launch rocket");
+fn main() {
+    rocket::ignite()
+        .mount("/",routes![version,get_user])
+        .launch();
 }

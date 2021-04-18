@@ -1,5 +1,3 @@
-#[macro_use]
-use rocket_contrib::databases::diesel::*;
 table! {
     users (email) {
         email -> Nullable<Text>,
