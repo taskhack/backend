@@ -28,8 +28,8 @@ pub struct User {
 #[get("/<email>")]
 async fn get_user(email: String, db: DbConn) -> String
 {
-    let temp: User = User { email: "dgramopadhye@gmail.com", hash: "123", firstname:"Dhruv", lastname: "Gramopadhye", groups: "", pfp_link:"https://dgramop.xyz" };
-    dbg!(diesel::insert_into(users::table).values(&temp));
+    let temp: User = User { email: String::from("dgramopadhye@gmail.com"), hash: String::from("123"), firstname:String::from("Dhruv"), lastname: String::from("Gramopadhye"), groups: String::from(""), pfp_link:String::from("https://dgramop.xyz") };
+    dbg!(diesel::insert_into(schema::users::table).values(&temp));
     format!("{} ",email)
     //fetch user from mongodb
 }
